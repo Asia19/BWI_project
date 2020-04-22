@@ -1,14 +1,43 @@
 import nltk
+from nltk.tag.perceptron import PerceptronTagger
+nltk.download('averaged_perceptron_tagger')
+tagger = PerceptronTagger()
+from collections import defaultdict
+
+class key_dependent_dict(defaultdict):
+    def __init__(self, f_of_x):
+        super().__init__(None)  # base class doesn't get a factory
+        self.f_of_x = f_of_x  # save f(x)
+    def __missing__(self, key):  # called when a default needed
+        ret = self.f_of_x(key)  # calculate default value
+        self[key] = ret  # and install it in the dict
+        return ret
+
+    
+def condition(ngram):
+    if len(ngram)==1:
+        raise Exception
+    if len(ngram)==2:
+        return ngram[0]
+    else:
+        return ngram[:-1]
 
 
 def get_ngrams(sentence, n):
     for i in range(len(sentence) - n + 1):
-        yield sentence[i:i+n]
+        yield tuple(sentence[i:i+n])
 
 
 def get_ngrams_str(sentence, n):
     for i in range(len(sentence) - n + 1):
         yield ' '.join(sentence[i:i+n])
+
+
+def get_ngrams_and_tags(sentence, n):
+    for i in range(len(sentence) - n + 1):
+        ngram = tuple(sentence[i:i + n])
+        _, tags = zip(*tagger.tag(ngram))
+        yield ' '.join(ngram), tags
 
 
 def get_decoding(tags):
@@ -58,9 +87,3 @@ def get_decoding(tags):
 #             _, ngram_tags[ngram] = zip(*nltk.pos_tag(ngram))
 #         yield ' '.join(ngram), ngram_tags[ngram]
 
-
-def get_ngrams_and_tags(sentence, n):
-    for i in range(len(sentence) - n + 1):
-        ngram = tuple(sentence[i:i+n])
-        _, tags = zip(*nltk.pos_tag(ngram))
-        yield ' '.join(ngram), tags
